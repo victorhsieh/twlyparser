@@ -4,12 +4,13 @@ require! \js-yaml
 class Rules
 
     (fname) -> 
+        @_cache = {}
         @patterns = require path.resolve fname
         throw "yaml is empty" unless @patterns
 
     rule: (query) ->
         [groupname, rulename] = query.split \.
-        if groupname is undefined or rulename is undefined 
+        if groupname is void or rulename is void
             throw "invalide rule: #query"
 
         try
@@ -17,17 +18,25 @@ class Rules
         catch e
             throw "rule not found #query #e"
 
-    regex: (query) ->
-        regexstr = @rule query .regex
-        throw "query does not regex string" if regexstr is undefined
-        new xregexp.XRegExp regexstr.replace "\n", ''
+    regex: (query, flag) ->
+        if flag
+            regexname = "#query~#flag"
+        else
+            regexname = query
+        flag ?= ''
+        if not @_cache[regexname]
+            regexstr = @rule query .regex
+            throw "query does not have regex string" if regexstr is void
+#            @_cache[query] = new xregexp.XRegExp.cache regexstr.replace "\n", ''
+            @_cache[regexname] = new RegExp (regexstr.replace "\n", ''), flag
+        @_cache[regexname]
 
     replace: (query, _from, to_) ->
         @regex query .replace _from _to
 
-    match: (query, text) ->
-        regex = @regex query
-        regex.xexec text
+    match: (query, text, flag) ->
+        regex = @regex query, flag
+        text.match regex
 
 module.exports = {Rules}
 

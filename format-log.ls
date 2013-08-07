@@ -1,24 +1,37 @@
 require! {optimist, fs, path}
 require! \./lib/util
 require! \./lib/ly
-{Parser, TextParser, TextFormatter} = require \./lib/parser
+require! \./lib/rules
+{YSLogParser, HTMLParser, TextParser, TextFormatter} = require \./lib/parser
 
-{gazette, ad, dir = '.', text, fromtext} = optimist.argv
+{gazette, ad, session, dir = '.', text, fromtext} = optimist.argv
+
+rules = new rules.Rules \patterns.yml
 
 ly.forGazette gazette, (id, g, type, entries, files) ->
     return if type isnt /院會紀錄/
-    return if ad and g.ad !~= ad
+    if ad is \empty
+        return if g.sitting?
+    else
+        return if ad and g.ad !~= ad
 
-    klass = if text => TextFormatter else if fromtext => TextParser else Parser
+    return if session and g.session !~= session
+
+    klass = switch
+    | text     => TextFormatter
+    | fromtext => class extends YSLogParser implements TextParser
+    else       => class extends YSLogParser implements HTMLParser
     ext   = if text => \txt else \md
     output = fs.openSync "#dir/#id.#ext" \w
     process.stdout.write id
     process.stdout.write '\r'
+
     try
-        parser = new klass output: (...args) -> fs.writeSync output, (args +++ "\n")join ''
+        parser = new klass {rules: rules, output: (...args) -> fs.writeSync output, (args ++ "\n")join ''}
+
         if fromtext
             file = "#dir/#id.txt"
-            parser.parseText util.readFileSync file
+            parser.parseText fs.readFileSync file
         else
             parser.base = "source/#{id}"
             for uri in files => let fname = path.basename uri

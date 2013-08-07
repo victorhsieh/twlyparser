@@ -19,7 +19,7 @@ LiveScript. Please use the one in chris ppa.
 ```
 $ sudo add-apt-repository ppa:chris-lea/node.js
 $ sudo apt-get update
-$ suod apt-get install node.js npm
+$ suod apt-get install nodejs npm
 ```
 
 ## install required node.js packages
@@ -55,9 +55,12 @@ To retrieve source word files of a specific gazette that is already listed in
 
 Convert to html with 'unoconv':
 
+You'll need to install LibreOffice.
+
 ```
 # make sure you do `git submodule init` and `git submodule update`
-/Applications/LibreOffice.app/Contents/MacOS/python unoconv/unoconv  -f html source/4004/*.doc
+
+twlyparser $ ./node_modules/.bin/lsc populate-sitting.ls --force --gazette 4004
 ```
 
 # To parse:
@@ -71,6 +74,9 @@ twlyparser $ mkdir source/
 twlyparser $ tar xzvf twlyrawdata.tgz -C source/ 
 twlyparser $ mkdir output
 
+# convert doc files to html and update data/gazettes.json with metadata
+twlyparser $ ./node_modules/.bin/lsc populate-sitting.ls --dometa
+
 # generate text file from source/
 twlyparser $ ./node_modules/.bin/lsc ./format-log.ls --text --gazette 4004 --dir ./output
 
@@ -82,10 +88,28 @@ twlyparser $ ./node_modules/.bin/lsc ./format-log.ls --text --ad 8 --dir ./outpu
 twlyparser $ ./node_modules/.bin/lsc ./format-log.ls --fromtext --ad 8 --dir ./output
 ```
 
+# To generate json files from md
+
+```
+# generate specific gazette or AD
+twlyparser $ ./node_modules/.bin/lsc ./md2json.ls --gazette 4004 --dir ./output
+twlyparser $ ./node_modules/.bin/lsc ./md2json.ls --ad 8 --dir ./output
+
+# generate all gazettes
+twlyparser $ ./node_modules/.bin/lsc ./md2json.ls --dir ../data
+```
+
 # To generate json files of gazettes (only supports interpellation for now)
 
 ```
 ./node_modules/.bin/lsc format-log-resource-json.ls --dir ../data
+```
+
+# generate CK csv from json
+```
+lsc ck_json2csv_mly.ls > mly.csv                 # ./data/mly-8.json
+lsc ck_json2csv_gazette.ls > gazettes.csv        # ./data/gazettes.json
+lsc ck_json2csv_vote.ls --dir ../ly-gazette/raw  # 3110.json 3111.json ...
 ```
 
 # To bootstrap or maintain the index file cache in data/:
@@ -97,8 +121,7 @@ sh ./list 4004 > source/meta/4004.html
 ./node_modules/.bin/lsc ./prepare-source.ls
 ```
 
-You should now have data/index-files.json.  Move to data/index.json if you are
-happy with it.
+data/index.json should now be populated.
 
 # CC0 1.0 Universal
 
